@@ -1,16 +1,31 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from models import User  # Absolute import
-from schemas import UserCreate, UserResponse  # Absolute import
-from database import SessionLocal, Base  # Absolute import
-from email_service import send_confirmation_email  # Updated import
+from models import User  # Importing User model from models.py
+from schemas import UserCreate, UserResponse, UserLogin  # Importing schemas from schemas.py
+from database import SessionLocal, engine, Base  # Importing DB connection
+from email_service import send_confirmation_email  # Email service
 from passlib.context import CryptContext
 import uuid
+from fastapi.middleware.cors import CORSMiddleware
 
+# Create tables in the database
+Base.metadata.create_all(bind=engine)
+
+# Initialize FastAPI app
 app = FastAPI()
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Dependency
+# Dependency to get DB session
 def get_db():
     db = SessionLocal()
     try:
@@ -35,7 +50,7 @@ async def signup(user: UserCreate, db: Session = Depends(get_db)):
         name=user.name,
         email=user.email,
         password=hashed_password,
-        dob=user.dob,
+        number=user.number,
         is_active=True  # Directly mark user as active
     )
     db.add(db_user)
@@ -62,6 +77,24 @@ async def get_user_by_email(email: str, db: Session = Depends(get_db)):
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
+
+# Login Endpoint
+@app.post("/login")
+async def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify password
+    if not pwd_context.verify(user.password, db_user.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    return {"message": "Login successful", "user_id": db_user.id}
+
+# Root Endpoint
+@app.get("/")
+async def root():
+    return {"message": "Welcome to FastAPI !"}
 
 if __name__ == "__main__":
     import uvicorn
