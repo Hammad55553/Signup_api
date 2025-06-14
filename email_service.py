@@ -45,7 +45,7 @@ def send_confirmation_email(email: str, name: str):
         # Email setup
         msg = MIMEText(body, "html")
         msg["Subject"] = subject
-        msg["From"] = os.getenv("EMAIL_USER")
+        msg["From"] = "Woman Collage <asperinfotech@gmail.com>"  # Your email with 'Asper InfoTech' name
         msg["To"] = email
 
         # Send email (using Gmail SMTP)
@@ -53,5 +53,44 @@ def send_confirmation_email(email: str, name: str):
             server.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASSWORD"))
             server.send_message(msg)
             print(f"Confirmation email sent to {email}")
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+
+def send_password_reset_email(email: str, otp: str):
+    """Send a password reset email with the OTP"""
+    try:
+        subject = "Reset Your Password"
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; color: #333;">
+            <h2 style="color: #4CAF50;">Password Reset Request</h2>
+            <p style="font-size: 16px; line-height: 1.6;">
+                We received a request to reset your password. Use the following OTP to reset your password:
+            </p>
+            <p style="font-size: 16px; font-weight: bold; color: #4CAF50;">
+                OTP: {otp}
+            </p>
+            <p style="font-size: 16px; line-height: 1.6;">
+                If you did not request this change, please ignore this email.
+            </p>
+            <footer style="font-size: 12px; color: #aaa; text-align: center;">
+                <p>If you have any questions, feel free to reply to this email or contact our support team.</p>
+                <p>Powered by Luggage Tracker™ | Official Travel Partner</p>
+            </footer>
+        </body>
+        </html>
+        """
+
+        # Email setup
+        msg = MIMEText(body, "html")
+        msg["Subject"] = subject
+        msg["From"] = "Woman Collage <asperinfotech@gmail.com>"
+        msg["To"] = email
+
+        # Send email (using Gmail SMTP)
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASSWORD"))
+            server.send_message(msg)
+            print(f"Password reset email sent to {email}")
     except Exception as e:
         print(f"Failed to send email: {e}")
