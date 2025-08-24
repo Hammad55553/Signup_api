@@ -13,6 +13,7 @@ from email_service import send_password_reset_email, send_confirmation_email
 # Firebase Imports
 import firebase_admin
 from firebase_admin import credentials, firestore
+from firebase_admin import auth as firebase_auth
 
 # Local Imports
 from models import User
@@ -113,6 +114,17 @@ async def signup(user: UserCreate, db_session: Session = Depends(get_db)):
     db_session.add(new_user)
     db_session.commit()
     db_session.refresh(new_user)
+
+    # 🔹 Firebase Authentication me user create karo (same UID)
+    try:
+        firebase_auth.create_user(
+            uid=new_user.id,
+            email=user.email,
+            password=user.password,  # Plain password, not hashed
+            display_name=user.name
+        )
+    except Exception as e:
+        print("Firebase Auth error:", e)
 
     # 🔹 Firebase me data store karo
     firebase_data = {
